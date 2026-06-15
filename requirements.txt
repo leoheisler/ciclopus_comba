@@ -1,0 +1,17 @@
+# ============================================================
+# CICLOPUS COMBA - SOC Analytics Platform
+# Dependências do projeto
+# ============================================================
+# Núcleo de dados / ML
+pandas>=2.0.0
+numpy>=1.24.0
+scikit-learn>=1.3.0
+xgboost>=2.0.0
+joblib>=1.3.0
+
+# Visualização e aplicação web
+plotly>=5.18.0
+streamlit>=1.30.0
+
+# Utilidades
+pyarrow>=14.0.0     # leitura/escrita rápida de parquet

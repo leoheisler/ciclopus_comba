@@ -1,0 +1,23 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+env/
+.ipynb_checkpoints/
+
+# Dados e artefatos (não versionar)
+data/raw/*.csv
+data/processed/*.parquet
+models/*.joblib
+models/*.json
+
+# manter as pastas no git
+!data/raw/.gitkeep
+!data/processed/.gitkeep
+!models/.gitkeep
+
+# SO / IDE
+.DS_Store
+.idea/
+.vscode/
