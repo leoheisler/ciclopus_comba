@@ -1,0 +1,524 @@
+% ============================================================
+%  Relatório Final --- CICLOPUS COMBA / SOC Analytics Platform
+%  Vítor Hugo Magnus Oliveira --- Semestre 2026/1
+% ============================================================
+\documentclass[12pt,a4paper]{article}
+
+% ---- Codificação e idioma ----
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[brazil]{babel}
+
+% ---- Matemática e gráficos ----
+\usepackage{amsmath}
+\usepackage{graphicx}
+
+% ---- Tabelas de qualidade ----
+\usepackage{booktabs}
+
+% ---- Links e metadados ----
+\usepackage[colorlinks=true, linkcolor=blue, urlcolor=blue, citecolor=blue]{hyperref}
+
+% ---- Geometria da página ----
+\usepackage{geometry}
+\geometry{margin=2.5cm}
+
+% ---- Utilitários ----
+\usepackage{microtype}   % melhora a hifenização e o espaçamento
+\usepackage{parskip}     % parágrafo por espaçamento vertical (sem recuo)
+\usepackage{xcolor}      % cores nos avisos
+
+% Evita overfull \hbox em linhas com \texttt{} longos (código/caminhos)
+\setlength{\emergencystretch}{3em}
+
+% ============================================================
+%  Metadados do documento
+% ============================================================
+\hypersetup{
+  pdftitle  = {Network Attack Detection Analysis},
+  pdfauthor = {Vítor Hugo Magnus Oliveira},
+}
+
+\title{Network Attack Detection Analysis}
+\author{%
+  Vítor Hugo Magnus Oliveira (341650) \\
+  Thomas Schneider Wiederkehr (342606) \\
+  Leonardo Gonzatti Heisler (344125)
+}
+\date{Ciência de Dados \\ Semestre 2026/1}
+
+% ============================================================
+\begin{document}
+% ============================================================
+
+\maketitle
+\thispagestyle{empty}
+\newpage
+
+\tableofcontents
+\newpage
+
+% ------------------------------------------------------------
+\begin{abstract}
+\noindent
+Este relatório descreve o projeto \textbf{CICLOPUS COMBA}, uma plataforma de
+análise para Centros de Operações de Segurança (SOC) desenvolvida sobre o
+dataset CICIDS-2017. O pipeline abrange carregamento e limpeza dos dados,
+geração de timestamps sintéticos para simulação operacional, treinamento
+comparativo de três classificadores (Decision Tree, Random Forest e XGBoost)
+e um dashboard interativo em Streamlit que simula o monitoramento de tráfego
+em tempo real. O melhor modelo obtido foi o \textbf{Random Forest},
+com \textbf{F1 macro de 0{,}9981} e acurácia de \textbf{99{,}94\%} no
+conjunto de teste, demonstrando a viabilidade de um sistema de detecção
+automatizada de intrusões baseado em aprendizado de máquina para os cenários
+de tráfego benigno, DDoS e PortScan.
+\end{abstract}
+
+% ============================================================
+\section{Objetivo}
+% ============================================================
+
+O projeto tem como objetivo a construção de um \emph{pipeline de ponta a ponta}
+para detecção de ataques de rede, simulando as condições operacionais de um
+Centro de Operações de Segurança (SOC). Os objetivos específicos são:
+
+\begin{itemize}
+  \item Implementar um pipeline reprodutível de ingestão, limpeza e engenharia
+        de atributos sobre o dataset CICIDS-2017.
+  \item Treinar e comparar três modelos de classificação supervisionada para
+        distinguir tráfego benigno de dois cenários de ataque: DDoS e
+        PortScan.
+  \item Gerar timestamps sintéticos plausíveis que permitam simular análises
+        temporais típicas de SOC (timelines, picos de incidente, sazonalidade
+        diurna) sem distorcer as proporções reais das classes.
+  \item Disponibilizar um dashboard interativo (Streamlit + Plotly) com 6
+        páginas funcionais, incluindo um painel operacional de SOC com janela
+        temporal deslizante e índice de risco em tempo real.
+\end{itemize}
+
+% ============================================================
+\section{Dataset}
+% ============================================================
+
+\subsection{Origem e composição}
+
+O projeto utiliza o dataset \textbf{CICIDS-2017} (\emph{Canadian Institute
+for Cybersecurity Intrusion Detection System 2017}), amplamente empregado
+em pesquisas de detecção de intrusão. Foram utilizados três arquivos CSV
+da coleção \emph{MachineLearningCVE}:
+
+\begin{itemize}
+  \item \texttt{Monday-WorkingHours.pcap\_ISCX.csv}: tráfego exclusivamente
+        benigno.
+  \item \texttt{Friday-WorkingHours-Afternoon-DDos.pcap\_ISCX.csv}: ataques
+        DDoS e tráfego benigno.
+  \item \texttt{Friday-WorkingHours-Afternoon-PortScan.pcap\_ISCX.csv}:
+        ataques de PortScan e tráfego benigno.
+\end{itemize}
+
+Após a concatenação e normalização dos rótulos (que apresentam variações de
+grafia entre arquivos), foram mantidas apenas as três classes-alvo:
+\texttt{BENIGN}, \texttt{DDoS} e \texttt{PortScan}. O dataset final contém
+\textbf{71 atributos} de fluxo de rede (mais o rótulo), extraídos pela
+ferramenta CICFlowMeter.
+
+\subsection{Limpeza e pré-processamento}
+
+O módulo \texttt{src/preprocessing.py} aplica as seguintes etapas, na ordem
+indicada:
+
+\begin{enumerate}
+  \item \textbf{Coerção numérica:} todas as colunas de feature são convertidas
+        para numérico; valores não conversíveis tornam-se \texttt{NaN}.
+  \item \textbf{Tratamento de infinitos:} valores \texttt{Inf}/\texttt{-Inf}
+        (comuns em \emph{Flow Bytes/s}) são substituídos por \texttt{NaN}.
+  \item \textbf{Imputação:} \texttt{NaN} restantes preenchidos com a mediana
+        da respectiva coluna (robusto a outliers).
+  \item \textbf{Remoção de duplicatas} exatas.
+  \item \textbf{Remoção de colunas constantes} (variância zero).
+  \item \textbf{Codificação de rótulos} via \texttt{LabelEncoder} com ordem
+        canônica \texttt{[BENIGN, DDoS, PortScan]}.
+\end{enumerate}
+
+\subsection{Geração de timestamps sintéticos}
+
+\textbf{\textcolor{red}{Aviso importante:}} o dataset CICIDS-2017 não possui
+uma linha temporal contínua adequada para monitoramento operacional. A coluna
+\texttt{Timestamp} adicionada pelo módulo \texttt{src/feature\_engineering.py}
+é \textbf{100\% sintética} e existe exclusivamente para simulação de análises
+de SOC (timelines, picos, sazonalidade). Ela não representa o tempo real dos
+fluxos capturados.
+
+A estratégia de geração de timestamps é parametrizada em \texttt{config.SYNTHETIC\_TIME}
+e segue a lógica a seguir:
+
+\begin{itemize}
+  \item \textbf{Janela simulada:} 5 dias consecutivos a partir de
+        \texttt{2017-07-03} (segunda-feira), com semente aleatória \texttt{42}
+        para reprodutibilidade.
+
+  \item \textbf{Tráfego benigno (BENIGN):} distribuído por todos os 5 dias
+        segundo um \emph{padrão diurno gaussiano}. A função
+        \texttt{\_diurnal\_weights} gera pesos de probabilidade por hora do
+        dia (0--23) como uma curva em sino centrada no meio do expediente
+        comercial (\texttt{business\_hours = (8, 18)}), com piso mínimo de
+        0{,}05 para evitar janelas completamente vazias à noite.
+
+  \item \textbf{Classes de ataque (DDoS / PortScan):} os eventos são
+        divididos em duas frações:
+        \begin{itemize}
+          \item \textbf{85\% concentrados} em janelas de incidente pré-definidas,
+                criando picos de atividade plausíveis na timeline.
+          \item \textbf{15\% espalhados} como ruído de fundo ao longo de todos
+                os dias (maior realismo).
+        \end{itemize}
+
+        As janelas de incidente configuradas são:
+        \begin{itemize}
+          \item DDoS: dia 1 das 10h às 12h; dia 3 das 14h às 16h.
+          \item PortScan: dia 0 das 9h às 11h; dia 2 das 13h às 15h;
+                dia 4 das 16h às 18h.
+        \end{itemize}
+
+  \item \textbf{Colunas derivadas} adicionadas ao DataFrame:
+        \texttt{Timestamp}, \texttt{date}, \texttt{hour}, \texttt{weekday},
+        \texttt{day\_label}.
+\end{itemize}
+
+A feature \texttt{hour} derivada dos timestamps sintéticos é incluída como
+atributo de entrada nos modelos (sendo a 71ª feature). Isso implica que
+qualquer importância atribuída a \texttt{hour} reflete a distribuição sintética
+e não uma característica real dos fluxos (limitação discutida na
+Seção~\ref{sec:conclusoes}).
+
+% ============================================================
+\section{Metodologia}
+% ============================================================
+
+\subsection{Pipeline geral}
+
+O pipeline, orquestrado por \texttt{src/pipeline.py}, executa as seguintes
+etapas em sequência:
+
+\begin{enumerate}
+  \item Carregamento dos CSVs reais via \texttt{src/data\_loader.py}
+        (fallback para dados sintéticos caso os CSVs não estejam presentes).
+  \item Amostragem estratificada: caso o dataset ultrapasse
+        \texttt{MAX\_SAMPLES = 120.000} registros, aplica-se uma subamostra
+        proporcional por classe.
+  \item Geração de timestamps sintéticos (\texttt{src/feature\_engineering.py}).
+  \item Pré-processamento e codificação (\texttt{src/preprocessing.py}).
+  \item Divisão treino/teste estratificada: proporção 75/25,
+        \texttt{random\_state = 42}.
+  \item Treinamento dos três modelos.
+  \item Avaliação e seleção automática do melhor modelo pela métrica
+        \textbf{F1 macro} (\texttt{config.SELECTION\_METRIC}).
+  \item Serialização do bundle (\texttt{models/models\_bundle.joblib}) e
+        exportação das métricas (\texttt{models/metrics.json}).
+\end{enumerate}
+
+\subsection{Configuração dos modelos}
+
+Os três classificadores são instanciados com os hiperparâmetros centralizados
+em \texttt{config.MODEL\_PARAMS}:
+
+\vspace{0.5em}
+
+\begin{tabular}{@{}lll@{}}
+  \toprule
+  \textbf{Hiperparâmetro} & \textbf{Valor} & \textbf{Observação} \\
+  \midrule
+  \multicolumn{3}{@{}l}{\textbf{Decision Tree}} \\
+  \quad \texttt{max\_depth} & 18 & Limita overfitting \\
+  \quad \texttt{class\_weight} & balanced & Compensa desbalanceamento \\
+  \midrule
+  \multicolumn{3}{@{}l}{\textbf{Random Forest}} \\
+  \quad \texttt{n\_estimators} & 200 & Número de árvores \\
+  \quad \texttt{max\_depth} & 22 & Árvores mais profundas que DT \\
+  \quad \texttt{class\_weight} & balanced & Compensa desbalanceamento \\
+  \quad \texttt{n\_jobs} & $-1$ & Paralelismo total \\
+  \midrule
+  \multicolumn{3}{@{}l}{\textbf{XGBoost}} \\
+  \quad \texttt{n\_estimators} & 300 & Boosting iterations \\
+  \quad \texttt{max\_depth} & 8 & Árvores mais rasas (regularização) \\
+  \quad \texttt{learning\_rate} & 0{,}2 & Passo de atualização \\
+  \quad \texttt{subsample} & 0{,}9 & Subamostragem por iteração \\
+  \quad \texttt{colsample\_bytree} & 0{,}9 & Subamostragem de features \\
+  \quad \texttt{tree\_method} & hist & Algoritmo aproximado (eficiência) \\
+  \quad \texttt{objective} & multi:softprob & Classificação multiclasse \\
+  \bottomrule
+\end{tabular}
+
+\subsection{Dashboard interativo}
+
+A aplicação \texttt{app/dashboard.py} (Streamlit + Plotly) expõe 6 páginas
+navegáveis pela barra lateral:
+
+\begin{enumerate}
+  \item \textbf{Overview:} KPIs executivos (total de registros, \% de ataques,
+        tráfego benigno, DDoS e PortScan detectados, melhor modelo); gráfico
+        de pizza (donut) de proporção por classe e área temporal de volume de
+        eventos.
+  \item \textbf{Exploração dos Dados (EDA):} distribuição de classes em
+        barras; histograma e boxplot interativos por feature (escala log
+        opcional); matriz de correlação de Pearson.
+  \item \textbf{Monitoramento Temporal:} timeline de eventos por classe com
+        granularidade ajustável (30~min/1~h/3~h/6~h); volume por hora do dia;
+        ataques por hora; eventos por dia; comparativo DDoS vs.~PortScan;
+        tabela de períodos de pico.
+  \item \textbf{Feature Importance:} gráfico de barras horizontais com as
+        importâncias de atributos do modelo selecionado; tabela completa do
+        ranking.
+  \item \textbf{Simulador de Predição:} sliders interativos para as 8 features
+        mais importantes; presets por perfil de classe (mediana global,
+        BENIGN, DDoS, PortScan); exibição da classificação prevista e
+        probabilidades por classe.
+  \item \textbf{Security Operations Center:} painel com janela temporal
+        deslizante (1~h, 2~h, 3~h ou 6~h), navegação por botões e
+        \emph{auto-play}; KPIs da janela (eventos, DDoS, PortScan, índice de
+        risco 0--100 com nível NORMAL/ELEVADO/CRÍTICO); gauge de risco;
+        tabela de alertas ativos; feed dos eventos recentes.
+\end{enumerate}
+
+A sidebar disponibiliza filtros globais (classes, período e faixa de horas)
+e botão de re-treinamento sob demanda.
+
+% ============================================================
+\section{Resultados}
+% ============================================================
+
+\subsection{Comparação de desempenho}
+
+Os modelos foram avaliados em um conjunto de teste estratificado composto
+por \textbf{30.000 fluxos}: 26.638 BENIGN, 1.500 DDoS e 1.862 PortScan.
+A Tabela~\ref{tab:metricas} apresenta as métricas agregadas.
+
+\begin{table}[ht]
+  \centering
+  \caption{Comparação de métricas entre os classificadores (conjunto de teste).}
+  \label{tab:metricas}
+  \begin{tabular}{@{}lrrrrr@{}}
+    \toprule
+    \textbf{Modelo}
+      & \textbf{Accuracy}
+      & \textbf{Precision}
+      & \textbf{Recall}
+      & \textbf{F1 macro}
+      & \textbf{F1 weighted} \\
+    \midrule
+    Decision Tree  & 0{,}9991 & 0{,}9970 & 0{,}9978 & 0{,}9974 & 0{,}9991 \\
+    \textbf{Random Forest}
+                   & \textbf{0{,}9994} & \textbf{0{,}9970} & \textbf{0{,}9991}
+                   & \textbf{0{,}9981} & \textbf{0{,}9994} \\
+    XGBoost        & 0{,}9993 & 0{,}9974 & 0{,}9987 & 0{,}9980 & 0{,}9993 \\
+    \bottomrule
+  \end{tabular}
+  \small\medskip\\
+  \raggedright
+  \textit{Precision, Recall e F1 macro = média entre as 3 classes.
+  Seleção automática pela métrica F1 macro (\texttt{config.SELECTION\_METRIC}).}
+\end{table}
+
+O \textbf{Random Forest} foi selecionado automaticamente como o melhor modelo.
+A diferença entre RF (F1 macro 0{,}9981) e XGBoost (0{,}9980) é marginal,
+inferior a 0{,}01\% em F1 macro, indicando que ambas as abordagens de
+\emph{ensemble} atingem desempenho virtualmente equivalente neste dataset.
+A Decision Tree, apesar de ser um classificador mais simples, também alcança
+métricas expressivas (F1 macro 0{,}9974), evidenciando a separabilidade
+intrínseca das classes no espaço de features de fluxo.
+
+\subsection{Análise por classe: Random Forest}
+
+A Tabela~\ref{tab:por_classe} detalha as métricas individuais do Random Forest
+para cada classe do conjunto de teste.
+
+\begin{table}[ht]
+  \centering
+  \caption{Métricas por classe (Random Forest).}
+  \label{tab:por_classe}
+  \begin{tabular}{@{}lrrrr@{}}
+    \toprule
+    \textbf{Classe}
+      & \textbf{Precision}
+      & \textbf{Recall}
+      & \textbf{F1}
+      & \textbf{Suporte} \\
+    \midrule
+    BENIGN    & 0{,}9999 & 0{,}9994 & 0{,}9996 & 26.638 \\
+    DDoS      & 0{,}9987 & 0{,}9980 & 0{,}9983 &  1.500 \\
+    PortScan  & 0{,}9925 & \textbf{1{,}0000} & 0{,}9963 &  1.862 \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+O destaque é o \textbf{Recall = 1{,}0000 para PortScan}: todos os 1.862
+casos de varredura de portas foram corretamente identificados, sem nenhum
+falso negativo, propriedade crítica para um SOC, pois um PortScan não
+detectado pode preceder uma intrusão. A matriz de confusão correspondente é:
+
+\[
+\mathbf{C}_{\text{RF}} =
+\begin{pmatrix}
+  26.622 & 2    & 14 \\
+  3      & 1.497 & 0 \\
+  0      & 0    & 1.862
+\end{pmatrix}
+\quad
+\begin{array}{l}
+  \leftarrow \text{BENIGN (pred.)} \\
+  \leftarrow \text{DDoS (pred.)} \\
+  \leftarrow \text{PortScan (pred.)}
+\end{array}
+\]
+
+Os únicos erros observados são 14 fluxos BENIGN classificados como PortScan
+(falsos positivos), 2 BENIGN como DDoS e 3 DDoS como BENIGN. São volumes
+diminutos num universo de 30.000 amostras.
+
+\subsection{Importância de features (Random Forest)}
+
+A Tabela~\ref{tab:importance} lista as 10 features mais relevantes extraídas
+do modelo Random Forest via \texttt{feature\_importances\_}.
+
+\begin{table}[ht]
+  \centering
+  \caption{Top 10 features por importância (Random Forest, de 71 no total).}
+  \label{tab:importance}
+  \begin{tabular}{@{}clr@{}}
+    \toprule
+    \textbf{Rank} & \textbf{Feature} & \textbf{Importância} \\
+    \midrule
+    1  & Fwd Packet Length Max         & 0{,}0855 \\
+    2  & Avg Fwd Segment Size          & 0{,}0814 \\
+    3  & Fwd Packet Length Mean        & 0{,}0776 \\
+    4  & Subflow Fwd Bytes             & 0{,}0659 \\
+    5  & Total Length of Fwd Packets   & 0{,}0579 \\
+    6  & Packet Length Mean            & 0{,}0497 \\
+    7  & Total Fwd Packets             & 0{,}0361 \\
+    8  & Average Packet Size           & 0{,}0337 \\
+    9  & Subflow Fwd Packets           & 0{,}0298 \\
+    10 & Flow Duration                 & 0{,}0281 \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+As features dominantes são relacionadas ao \textbf{tamanho dos pacotes no
+sentido direto (forward)} da conexão: \emph{Fwd Packet Length Max},
+\emph{Avg Fwd Segment Size} e \emph{Fwd Packet Length Mean} lideram o ranking
+com importâncias acima de 0{,}075. Isso é consistente com o comportamento
+esperado dos ataques:
+
+\begin{itemize}
+  \item \textbf{DDoS:} gera rajadas de pacotes com payloads volumosos
+        (\emph{fwd length} alto) e alta cadência.
+  \item \textbf{PortScan:} envia pacotes mínimos (SYN isolados), distinguindo-se
+        pelo tamanho muito reduzido e pela ausência de tráfego reverso
+        (\emph{bwd = 0}).
+  \item \textbf{BENIGN:} apresenta fluxos bidirecionais equilibrados com
+        payloads de tamanho médio.
+\end{itemize}
+
+% ============================================================
+\section{Conclusões}
+\label{sec:conclusoes}
+% ============================================================
+
+\subsection{Interpretação crítica dos resultados}
+
+Os três modelos avaliados atingiram métricas excepcionais (F1 macro $> 0{,}997$),
+confirmando que os atributos de fluxo do CICIDS-2017 são altamente discriminativos
+para as classes BENIGN, DDoS e PortScan. O \textbf{Random Forest} se destacou
+marginalmente, oferecendo o melhor equilíbrio entre Precision, Recall e F1
+macro, com a vantagem adicional de Recall perfeito para PortScan,
+propriedade de alto valor operacional.
+
+A proximidade entre Random Forest e XGBoost (diferença $< 0{,}01\%$ em F1
+macro) é esperada: ambos são modelos de ensemble baseados em árvores, e o
+ganho do boosting sobre o bagging é frequentemente superado pela regularização
+implícita do bagging em datasets limpos e bem separados.
+
+\subsection{Impacto para um SOC real}
+
+Um sistema com F1 macro próximo a 1{,}000 e Recall = 1{,}0 para PortScan
+seria, em princípio, extremamente valioso em produção: detecta virtualmente
+todos os ataques com uma taxa de falsos positivos muito baixa. No entanto,
+sua adoção em um SOC real exige considerar os pontos a seguir.
+
+\textbf{Pontos favoráveis:}
+\begin{itemize}
+  \item Inferência em tempo real viável (os modelos de árvore são rápidos e
+        serializáveis).
+  \item Interpretabilidade via Feature Importance facilita a explicação das
+        decisões para analistas de segurança.
+  \item O pipeline é reprodutível e modular, permitindo re-treinamento sob
+        demanda com novos dados.
+\end{itemize}
+
+\textbf{Pontos de atenção:}
+\begin{itemize}
+  \item \textbf{Generalização para tráfego fora da distribuição:} o CICIDS-2017
+        foi capturado em ambiente de laboratório controlado em 2017. Ataques
+        modernos podem ter perfis de fluxo distintos dos representados no
+        dataset.
+  \item \textbf{Dois vetores de ataque apenas:} o modelo atual discrimina
+        somente DDoS e PortScan. Um SOC real enfrenta dezenas de categorias
+        (exploits, C\&C, exfiltração, ransomware, etc.).
+  \item \textbf{Deriva de distribuição (\emph{concept drift}):} o tráfego de
+        rede evolui ao longo do tempo; o modelo exigiria re-treinamento periódico
+        com dados rotulados recentes.
+\end{itemize}
+
+\subsection{Limitações da abordagem de tempo sintético}
+
+A geração de timestamps sintéticos é a limitação mais significativa do projeto
+para uso operacional:
+
+\begin{enumerate}
+  \item \textbf{Desconexão temporal:} os timestamps não correspondem ao instante
+        real de captura dos fluxos. Análises de janela temporal (frequência de
+        ataques, sazonalidade) refletem a distribuição escolhida pelo projetista,
+        não o comportamento real dos atacantes.
+
+  \item \textbf{Feature \texttt{hour} contaminada:} a 71ª feature (\texttt{hour})
+        é derivada do timestamp sintético. Se o modelo aprendeu a associar certas
+        horas a certos ataques, essa associação é artificial e pode produzir erros
+        caso aplicado a dados com timestamps reais em horários distintos dos
+        configurados.
+
+  \item \textbf{Otimismo das métricas:} embora as métricas elevadas sejam em
+        grande parte justificadas pela separabilidade real das classes no espaço
+        de features, a ausência de variação temporal autêntica pode inflar
+        ligeiramente os resultados ao eliminar correlações temporais espúrias
+        que ocorrem em tráfego real.
+\end{enumerate}
+
+Para um cenário de produção, recomenda-se:
+\begin{itemize}
+  \item Substituir os timestamps sintéticos pelas marcas de tempo originais dos
+        pcaps do CICIDS-2017 (ou de capturas mais recentes).
+  \item Excluir a feature \texttt{hour} do conjunto de treino caso os timestamps
+        não sejam fidedignos.
+  \item Ampliar o escopo para os demais tipos de ataque do CICIDS-2017
+        (Brute Force, Web Attacks, Infiltration, Botnet) e adotar um regime de
+        validação cruzada temporal (\emph{walk-forward}) ao invés do split
+        aleatório.
+\end{itemize}
+
+% ============================================================
+\section*{Referências}
+% ============================================================
+
+\begin{itemize}
+  \item Sharafaldin, I., Habibi Lashkari, A., Ghorbani, A.\ A. \textit{Toward
+        Generating a New Intrusion Detection Dataset and Intrusion Traffic
+        Characterization.} In: ICISSP 2018.
+        \url{https://www.unb.ca/cic/datasets/ids-2017.html}
+
+  \item Pedregosa, F.\ et al. \textit{Scikit-learn: Machine Learning in Python.}
+        JMLR 12, pp.\ 2825--2830, 2011.
+
+  \item Chen, T., Guestrin, C. \textit{XGBoost: A Scalable Tree Boosting System.}
+        KDD 2016.
+\end{itemize}
+
+\end{document}

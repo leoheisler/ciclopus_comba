@@ -214,7 +214,7 @@ def load_dataset(prefer_real: bool = True) -> tuple[pd.DataFrame, bool]:
             return load_raw_csvs(), False
         except FileNotFoundError:
             warnings.warn(
-                "Dataset real não encontrado em data/raw — usando dados SINTÉTICOS."
+                "Dataset real não encontrado em data/raw: usando dados SINTÉTICOS."
             )
     return generate_synthetic_dataset(), True
 

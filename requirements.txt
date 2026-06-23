@@ -1,5 +1,5 @@
 # ============================================================
-# CICLOPUS COMBA - SOC Analytics Platform
+# Network Attack Detection Analysis
 # Dependências do projeto
 # ============================================================
 # Núcleo de dados / ML

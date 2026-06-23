@@ -193,7 +193,7 @@ def events_by_day_class(df: pd.DataFrame) -> pd.DataFrame:
 
 def timeline(df: pd.DataFrame, freq: str = "1h") -> pd.DataFrame:
     """
-    Série temporal contínua (resample) por classe — base para a timeline
+    Série temporal contínua (resample) por classe: base para a timeline
     de incidentes e evolução de DDoS/PortScan.
     """
     g = (

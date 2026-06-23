@@ -1,18 +1,18 @@
-# 🛡️ CICLOPUS COMBA — SOC Analytics Platform
+# Network Attack Detection Analysis
 
 Aplicação web interativa de **Data Science / Machine Learning** para
 **detecção de ataques de rede** sobre o dataset **CICIDS-2017**, simulando um
 **Centro de Operações de Segurança (SOC)**.
 
-O projeto cobre **todo o pipeline de Data Science** — carga, limpeza,
-engenharia de atributos, treinamento, avaliação e *deploy* analítico — entregue
+O projeto cobre **todo o pipeline de Data Science**: carga, limpeza,
+engenharia de atributos, treinamento, avaliação e *deploy* analítico, entregue
 como um **dashboard Streamlit** com 7 páginas e gráficos Plotly.
 
 > Classes detectadas: **BENIGN**, **DDoS**, **PortScan**.
 
 ---
 
-## ✨ Funcionalidades
+## Funcionalidades
 
 | Página | Conteúdo |
 |--------|----------|
@@ -26,7 +26,7 @@ como um **dashboard Streamlit** com 7 páginas e gráficos Plotly.
 
 ---
 
-## 🏗️ Arquitetura
+## Arquitetura
 
 ```
 ciclopus_comba/
@@ -36,8 +36,8 @@ ciclopus_comba/
 │
 ├── data/
 │   ├── raw/                  # >>> coloque aqui os CSVs do CICIDS-2017 <<<
-│   └── processed/            # dataset tratado (.parquet) — gerado
-├── models/                   # modelos + métricas serializados — gerado
+│   └── processed/            # dataset tratado (.parquet) - gerado
+├── models/                   # modelos + métricas serializados - gerado
 │
 ├── src/                      # núcleo do pipeline de Data Science
 │   ├── data_loader.py        # 1. carga (CSV real OU fallback sintético)
@@ -64,7 +64,7 @@ o pipeline completo automaticamente na primeira abertura (com cache).
 
 ---
 
-## ⏱️ Sobre os timestamps (LEIA)
+## Sobre os timestamps (LEIA)
 
 > **O CICIDS-2017 não possui uma linha temporal contínua adequada para
 > monitoramento.** A coluna `Timestamp` é **100% SINTÉTICA** e existe apenas
@@ -83,7 +83,7 @@ Como é gerada (`src/feature_engineering.py`):
 
 ---
 
-## 🤖 Modelos
+## Modelos
 
 Treinados e comparados: **Decision Tree**, **Random Forest**, **XGBoost**.
 
@@ -93,7 +93,7 @@ O **melhor modelo é selecionado automaticamente** pela métrica
 
 ---
 
-## 🚀 Como executar
+## Como executar
 
 ### 1. Pré-requisitos
 * Python 3.10+
@@ -131,14 +131,14 @@ treinados, o app roda o pipeline automaticamente.
 
 ---
 
-## 🧰 Stack
+## Stack
 
 `Python` · `Pandas` · `NumPy` · `Scikit-Learn` · `XGBoost` · `Plotly` ·
 `Streamlit` · `joblib`
 
 ---
 
-## 📄 Notas acadêmicas
+## Notas acadêmicas
 
 Este projeto foi estruturado como **projeto final de Data Science**,
 demonstrando o pipeline completo de forma modular e reprodutível, com entrega

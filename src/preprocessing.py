@@ -68,7 +68,7 @@ def clean_dataframe(df: pd.DataFrame) -> pd.DataFrame:
     # remove duplicatas exatas
     df = df.drop_duplicates().reset_index(drop=True)
 
-    # remove colunas constantes (variância zero) — não ajudam o modelo
+    # remove colunas constantes (variância zero): não ajudam o modelo
     nunique = df[feature_cols].nunique()
     constant_cols = nunique[nunique <= 1].index.tolist()
     if constant_cols:

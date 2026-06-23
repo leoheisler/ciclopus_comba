@@ -1,7 +1,7 @@
 """
 dashboard.py
 ============
-CICLOPUS COMBA — SOC Analytics Platform.
+Network Attack Detection Analysis.
 
 Aplicação web interativa (Streamlit + Plotly) que simula um Centro de
 Operações de Segurança (SOC) sobre o dataset CICIDS-2017, cobrindo todo o
@@ -41,8 +41,7 @@ from src.pipeline import get_pipeline  # noqa: E402
 # Configuração da página + tema
 # ==================================================================
 st.set_page_config(
-    page_title="CICLOPUS COMBA · SOC Analytics",
-    page_icon="🛡️",
+    page_title="Network Attack Detection Analysis",
     layout="wide",
     initial_sidebar_state="expanded",
 )
@@ -158,15 +157,15 @@ def kpi_card(label: str, value: str, color: str = None, sub: str = "") -> str:
 
 
 # ==================================================================
-# Sidebar — identidade, filtros globais e estado dos dados
+# Sidebar: identidade, filtros globais e estado dos dados
 # ==================================================================
 def sidebar(pipe: dict) -> dict:
-    st.sidebar.markdown("## 🛡️ CICLOPUS COMBA")
-    st.sidebar.caption("SOC Analytics Platform · CICIDS-2017")
+    st.sidebar.markdown("## Network Attack Detection Analysis")
+    st.sidebar.caption("CICIDS-2017")
 
     if pipe["is_synthetic"]:
         st.sidebar.warning(
-            "⚠️ Usando **dados sintéticos** (CSVs do CICIDS-2017 não "
+            "Usando **dados sintéticos** (CSVs do CICIDS-2017 não "
             "encontrados em `data/raw`). O pipeline é idêntico para dados reais."
         )
 
@@ -183,13 +182,13 @@ def sidebar(pipe: dict) -> dict:
     )
 
     st.sidebar.markdown("---")
-    st.sidebar.markdown("### 🔎 Filtros globais")
+    st.sidebar.markdown("### Filtros globais")
 
     df = pipe["df"]
     dates = sorted(df[config.TIMESTAMP_COL].dt.date.unique())
 
     # botão de reset: limpa o estado dos filtros e recarrega com os padrões
-    if st.sidebar.button("♻️ Limpar filtros", width="stretch"):
+    if st.sidebar.button("Limpar filtros", width="stretch"):
         for k in ("flt_classes", "flt_dates", "flt_hours"):
             st.session_state.pop(k, None)
         st.rerun()
@@ -223,18 +222,18 @@ def sidebar(pipe: dict) -> dict:
 
     st.sidebar.caption(
         f"Mostrando **{', '.join(classes)}** · "
-        f"{date_range[0].strftime('%d/%m')}–{date_range[1].strftime('%d/%m')} · "
-        f"{hours[0]}h–{hours[1]}h"
+        f"{date_range[0].strftime('%d/%m')}-{date_range[1].strftime('%d/%m')} · "
+        f"{hours[0]}h-{hours[1]}h"
     )
 
     st.sidebar.markdown("---")
-    if st.sidebar.button("🔄 Re-treinar modelos", width="stretch"):
+    if st.sidebar.button("Re-treinar modelos", width="stretch"):
         load_pipeline.clear()
         load_pipeline(force=True)
         st.rerun()
 
     st.sidebar.caption(
-        "Tempo é **sintético** — apenas para simulação operacional de SOC."
+        "Tempo é **sintético**: apenas para simulação operacional de SOC."
     )
 
     return {"page": page, "classes": classes, "date_range": date_range, "hours": hours}
@@ -255,10 +254,10 @@ def apply_filters(df: pd.DataFrame, f: dict) -> pd.DataFrame:
 
 
 # ==================================================================
-# Página 1 — Overview
+# Página 1: Overview
 # ==================================================================
 def page_overview(df: pd.DataFrame, pipe: dict):
-    st.title("📊 Overview Operacional")
+    st.title("Overview Operacional")
     st.caption("Visão executiva do tráfego monitorado e da postura de segurança.")
 
     total = len(df)
@@ -313,10 +312,10 @@ def page_overview(df: pd.DataFrame, pipe: dict):
 
 
 # ==================================================================
-# Página 2 — Exploração dos Dados
+# Página 2: Exploração dos Dados
 # ==================================================================
 def page_eda(df: pd.DataFrame, pipe: dict):
-    st.title("🔬 Exploração dos Dados (EDA)")
+    st.title("Exploração dos Dados (EDA)")
 
     numeric_cols = [c for c in pipe["feature_names"] if c in df.columns]
 
@@ -378,18 +377,18 @@ def page_eda(df: pd.DataFrame, pipe: dict):
     )
     st.plotly_chart(style_fig(fig_corr, height=520), width="stretch")
 
-    with st.expander("📋 Amostra dos dados e estatísticas"):
+    with st.expander("Amostra dos dados e estatísticas"):
         st.dataframe(df.head(200), width="stretch")
         st.dataframe(df[numeric_cols].describe().T, width="stretch")
 
 
 # ==================================================================
-# Página 3 — Monitoramento Temporal
+# Página 3: Monitoramento Temporal
 # ==================================================================
 def page_temporal(df: pd.DataFrame, pipe: dict):
-    st.title("⏱️ Monitoramento Temporal")
+    st.title("Monitoramento Temporal")
     st.info(
-        "🧪 **Simulação operacional.** Os timestamps são SINTÉTICOS "
+        "**Simulação operacional.** Os timestamps são SINTÉTICOS "
         "(o CICIDS-2017 não possui linha temporal contínua). Servem apenas "
         "para demonstrar análises de SOC: timelines, picos e sazonalidade."
     )
@@ -440,7 +439,7 @@ def page_temporal(df: pd.DataFrame, pipe: dict):
     st.plotly_chart(style_fig(fig_cmp), width="stretch")
 
     # Períodos de pico
-    st.markdown("### 🔝 Períodos de pico de ataques")
+    st.markdown("### Períodos de pico de ataques")
     peaks = feature_engineering.peak_periods(df, freq=freq, top=8)
     if not peaks.empty:
         peaks_disp = peaks.copy()
@@ -453,10 +452,10 @@ def page_temporal(df: pd.DataFrame, pipe: dict):
 
 
 # ==================================================================
-# Página 4 — Feature Importance
+# Página 4: Feature Importance
 # ==================================================================
 def page_importance(df: pd.DataFrame, pipe: dict):
-    st.title("⭐ Importância das Variáveis")
+    st.title("Importância das Variáveis")
 
     model_name = st.selectbox("Modelo", list(pipe["models"].keys()),
                               index=list(pipe["models"].keys()).index(
@@ -472,7 +471,7 @@ def page_importance(df: pd.DataFrame, pipe: dict):
     top = imp.head(top_n).iloc[::-1]
     fig = px.bar(top, x="importance", y="feature", orientation="h",
                  color="importance", color_continuous_scale="Viridis",
-                 title=f"Top {top_n} features — {model_name}")
+                 title=f"Top {top_n} features: {model_name}")
     st.plotly_chart(style_fig(fig, height=500), width="stretch")
 
     st.markdown("#### Ranking completo")
@@ -480,10 +479,10 @@ def page_importance(df: pd.DataFrame, pipe: dict):
 
 
 # ==================================================================
-# Página 5 — Simulador de Predição
+# Página 5: Simulador de Predição
 # ==================================================================
 def page_simulator(df: pd.DataFrame, pipe: dict):
-    st.title("🎛️ Simulador de Predição")
+    st.title("Simulador de Predição")
     st.caption("Defina as características de um fluxo e veja a classificação "
                "do melhor modelo em tempo real.")
 
@@ -554,11 +553,10 @@ def page_simulator(df: pd.DataFrame, pipe: dict):
 
     st.markdown("### Resultado")
     color = config.CLASS_COLOR_MAP[pred_label]
-    icon = "✅" if pred_label == "BENIGN" else "🚨"
     st.markdown(
         f"<div class='soc-card' style='border-left:6px solid {color}'>"
         f"<div class='soc-metric-label'>Classificação prevista</div>"
-        f"<div class='soc-metric-value' style='color:{color}'>{icon} {pred_label}</div>"
+        f"<div class='soc-metric-value' style='color:{color}'>{pred_label}</div>"
         f"</div>", unsafe_allow_html=True)
 
     if proba is not None:
@@ -574,10 +572,10 @@ def page_simulator(df: pd.DataFrame, pipe: dict):
 
 
 # ==================================================================
-# Página 6 — Security Operations Center
+# Página 6: Security Operations Center
 # ==================================================================
 def page_soc(df: pd.DataFrame, pipe: dict):
-    st.title("🛰️ Security Operations Center")
+    st.title("Security Operations Center")
     st.caption("Painel operacional simulado · uma **janela temporal deslizante** "
                "percorre a linha do tempo sintética, como um analista monitorando "
                "o tráfego ao vivo.")
@@ -588,7 +586,7 @@ def page_soc(df: pd.DataFrame, pipe: dict):
     # ---- painel de controle da janela temporal ----
     panel = st.container(border=True)
     panel.markdown(
-        "<div class='soc-controls-title'>🎛️ Controle da janela temporal</div>",
+        "<div class='soc-controls-title'>Controle da janela temporal</div>",
         unsafe_allow_html=True,
     )
     c1, c2, c3 = panel.columns([1.1, 2.4, 1.5], vertical_alignment="bottom")
@@ -615,11 +613,11 @@ def page_soc(df: pd.DataFrame, pipe: dict):
     # ---- botões de navegação no tempo ----
     idx = positions.index(st.session_state["soc_pos"])
     b = c2.columns(3)
-    if b[0].button("⏮️ Início", width="stretch", help="Voltar ao começo"):
+    if b[0].button("Início", width="stretch", help="Voltar ao começo"):
         idx = 0
-    if b[1].button("◀️ Voltar", width="stretch", help="Janela anterior"):
+    if b[1].button("Voltar", width="stretch", help="Janela anterior"):
         idx = max(0, idx - 1)
-    if b[2].button("▶️ Avançar", width="stretch", type="primary",
+    if b[2].button("Avançar", width="stretch", type="primary",
                    help="Próxima janela"):
         idx = min(len(positions) - 1, idx + 1)
     st.session_state["soc_pos"] = positions[idx]
@@ -665,7 +663,7 @@ def page_soc(df: pd.DataFrame, pipe: dict):
         unsafe_allow_html=True)
 
     st.caption(
-        f"🕒 Janela atual: **{w_start.strftime('%d/%m %H:%M')} → "
+        f"Janela atual: **{w_start.strftime('%d/%m %H:%M')} → "
         f"{w_end.strftime('%d/%m %H:%M')}** · posição {idx + 1}/{len(positions)}"
     )
 
@@ -708,23 +706,23 @@ def page_soc(df: pd.DataFrame, pipe: dict):
     left.plotly_chart(style_fig(fig_live, height=300), width="stretch")
 
     # ---- alertas ativos na janela ----
-    st.markdown("### 🚨 Alertas ativos na janela")
+    st.markdown("### Alertas ativos na janela")
     alerts = wdf[wdf[config.LABEL_COL] != "BENIGN"].copy()
     if alerts.empty:
-        st.success("Nenhum ataque nesta janela. Situação sob controle. ✅")
+        st.success("Nenhum ataque nesta janela. Situação sob controle.")
     else:
-        sev_map = {"DDoS": "🔴 ALTA", "PortScan": "🟠 MÉDIA"}
+        sev_map = {"DDoS": "ALTA", "PortScan": "MEDIA"}
         alerts_disp = pd.DataFrame({
             "Horário": alerts[ts].dt.strftime("%Y-%m-%d %H:%M:%S"),
             "Tipo de ataque": alerts[config.LABEL_COL],
             "Severidade": alerts[config.LABEL_COL].map(sev_map),
             "Porta destino": alerts.get("Destination Port", pd.Series(["-"] * len(alerts))),
-            "Status": "🔍 Em investigação",
+            "Status": "Em investigação",
         }).tail(15).iloc[::-1]
         st.dataframe(alerts_disp, width="stretch", hide_index=True)
 
     # ---- feed de eventos da janela ----
-    st.markdown("### 📡 Eventos recentes (feed da janela)")
+    st.markdown("### Eventos recentes (feed da janela)")
     if n_total:
         feed = wdf.tail(15).iloc[::-1]
         feed_disp = pd.DataFrame({

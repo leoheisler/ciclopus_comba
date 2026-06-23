@@ -32,7 +32,7 @@ from src import data_loader, evaluation, feature_engineering, preprocessing, tra
 def run(force_synthetic: bool = False) -> None:
     t0 = time.time()
     print("=" * 60)
-    print("CICLOPUS COMBA — Pipeline de treinamento")
+    print("Network Attack Detection Analysis: Pipeline de treinamento")
     print("=" * 60)
 
     # 1. Carregar
@@ -77,7 +77,7 @@ def run(force_synthetic: bool = False) -> None:
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Pipeline de treino CICLOPUS COMBA")
+    parser = argparse.ArgumentParser(description="Pipeline de treino Network Attack Detection Analysis")
     parser.add_argument(
         "--synthetic",
         action="store_true",

@@ -1,7 +1,7 @@
 """
 config.py
 =========
-Configurações globais do projeto CICLOPUS COMBA (SOC Analytics Platform).
+Configurações globais do projeto Network Attack Detection Analysis.
 
 Centraliza caminhos, constantes, parâmetros de modelos e definições de cores
 para que todos os módulos compartilhem a mesma fonte de verdade.
