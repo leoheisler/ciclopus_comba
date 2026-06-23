@@ -120,7 +120,7 @@ def save_metrics(metrics: dict, best_model_name: str, path=config.METRICS_JSON) 
 if __name__ == "__main__":
     from src import data_loader, feature_engineering, preprocessing, training
 
-    raw, _ = data_loader.load_dataset()
+    raw = data_loader.load_dataset()
     raw = feature_engineering.add_synthetic_timestamp(raw)
     X, y, art = preprocessing.preprocess(raw)
     res = training.train_all(X, y, art)

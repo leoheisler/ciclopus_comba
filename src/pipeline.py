@@ -16,28 +16,27 @@ import config
 from src import data_loader, feature_engineering, preprocessing, training
 
 
-def _prepare_dataframe(force_synthetic: bool = False) -> tuple[pd.DataFrame, bool]:
+def _prepare_dataframe() -> pd.DataFrame:
     """Carrega o dataset, amostra e adiciona timestamps sintéticos."""
-    raw, synthetic = data_loader.load_dataset(prefer_real=not force_synthetic)
+    raw = data_loader.load_dataset()
 
     if config.MAX_SAMPLES and len(raw) > config.MAX_SAMPLES:
-        raw = raw.groupby(config.LABEL_COL, group_keys=False).apply(
-            lambda g: g.sample(
-                n=max(1, int(len(g) / len(raw) * config.MAX_SAMPLES)),
-                random_state=config.RANDOM_STATE,
-            )
+        raw = data_loader.balanced_sample_by_label(
+            raw,
+            max_samples=config.MAX_SAMPLES,
+            random_state=config.RANDOM_STATE,
         )
 
     raw = feature_engineering.add_synthetic_timestamp(raw)
-    return raw, synthetic
+    return raw
 
 
-def build_pipeline(force_synthetic: bool = False, save: bool = True) -> dict:
+def build_pipeline(save: bool = True) -> dict:
     """
     Executa o pipeline completo (carregar → timestamp → preprocessar → treinar)
     e retorna o dicionário de artefatos.
     """
-    df, synthetic = _prepare_dataframe(force_synthetic)
+    df = _prepare_dataframe()
 
     X, y, artifacts = preprocessing.preprocess(df)
     result = training.train_all(X, y, artifacts)
@@ -48,7 +47,6 @@ def build_pipeline(force_synthetic: bool = False, save: bool = True) -> dict:
 
     return {
         "df": df,
-        "is_synthetic": synthetic,
         "models": result.models,
         "metrics": result.metrics,
         "best_model_name": result.best_model_name,
@@ -70,11 +68,8 @@ def get_pipeline(force_retrain: bool = False) -> dict:
     bundle = training.load_bundle()
     if bundle is not None and config.PROCESSED_PARQUET.exists():
         df = pd.read_parquet(config.PROCESSED_PARQUET)
-        # detecta origem pelos nomes de arquivo em data/raw
-        is_synthetic = not data_loader.list_raw_files()
         return {
             "df": df,
-            "is_synthetic": is_synthetic,
             "models": bundle["models"],
             "metrics": bundle["metrics"],
             "best_model_name": bundle["best_model_name"],

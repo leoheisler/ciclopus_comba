@@ -5,7 +5,7 @@ Aplicação web interativa de **Data Science / Machine Learning** para
 **Centro de Operações de Segurança (SOC)**.
 
 O projeto cobre **todo o pipeline de Data Science**: carga, limpeza,
-engenharia de atributos, treinamento, avaliação e *deploy* analítico, entregue
+engenharia de atributos, treinamento, avaliação e _deploy_ analítico, entregue
 como um **dashboard Streamlit** com 7 páginas e gráficos Plotly.
 
 > Classes detectadas: **BENIGN**, **DDoS**, **PortScan**.
@@ -14,15 +14,15 @@ como um **dashboard Streamlit** com 7 páginas e gráficos Plotly.
 
 ## Funcionalidades
 
-| Página | Conteúdo |
-|--------|----------|
-| 1 · **Overview** | KPIs: total de registros, ataques, % de ataques, melhor modelo |
-| 2 · **Exploração dos Dados** | Distribuição de classes, histogramas, boxplots, correlação |
-| 3 · **Monitoramento Temporal** | Timeline, ataques por hora/dia, picos, DDoS × PortScan |
-| 4 · **Machine Learning** | Métricas, comparação de modelos, matrizes de confusão |
-| 5 · **Feature Importance** | Ranking das variáveis mais relevantes |
-| 6 · **Simulador de Predição** | Usuário ajusta features → modelo prevê a classe |
-| 7 · **Security Operations Center** | Feed de eventos, índice de risco, alertas, gráficos "ao vivo" |
+| Página                             | Conteúdo                                                       |
+| ---------------------------------- | -------------------------------------------------------------- |
+| 1 · **Overview**                   | KPIs: total de registros, ataques, % de ataques, melhor modelo |
+| 2 · **Exploração dos Dados**       | Distribuição de classes, histogramas, boxplots, correlação     |
+| 3 · **Monitoramento Temporal**     | Timeline, ataques por hora/dia, picos, DDoS × PortScan         |
+| 4 · **Machine Learning**           | Métricas, comparação de modelos, matrizes de confusão          |
+| 5 · **Feature Importance**         | Ranking das variáveis mais relevantes                          |
+| 6 · **Simulador de Predição**      | Usuário ajusta features → modelo prevê a classe                |
+| 7 · **Security Operations Center** | Feed de eventos, índice de risco, alertas, gráficos "ao vivo"  |
 
 ---
 
@@ -40,7 +40,7 @@ ciclopus_comba/
 ├── models/                   # modelos + métricas serializados - gerado
 │
 ├── src/                      # núcleo do pipeline de Data Science
-│   ├── data_loader.py        # 1. carga (CSV real OU fallback sintético)
+│   ├── data_loader.py        # 1. carga (CSV real)
 │   ├── preprocessing.py      # 2. limpeza, NaN/inf, encoding, scaling
 │   ├── feature_engineering.py# 3. TIMESTAMPS SINTÉTICOS + agregações temporais
 │   ├── training.py           # 4. treina Decision Tree / Random Forest / XGBoost
@@ -73,13 +73,13 @@ o pipeline completo automaticamente na primeira abertura (com cache).
 
 Como é gerada (`src/feature_engineering.py`):
 
-* tráfego distribuído ao longo de **5 dias** consecutivos;
-* tráfego **BENIGN** segue um **padrão diurno** (picos em horário comercial);
-* **DDoS** e **PortScan** são concentrados em **janelas de incidente**
+- tráfego distribuído ao longo de **5 dias** consecutivos;
+- tráfego **BENIGN** segue um **padrão diurno** (picos em horário comercial);
+- **DDoS** e **PortScan** são concentrados em **janelas de incidente**
   (≈85% dos eventos) gerando **picos de atividade** plausíveis, com ~15% de
   ruído de fundo;
-* as **proporções entre classes são preservadas** (apenas o tempo é atribuído);
-* parâmetros configuráveis em `config.SYNTHETIC_TIME`.
+- as **proporções entre classes são preservadas** (apenas o tempo é atribuído);
+- parâmetros configuráveis em `config.SYNTHETIC_TIME`.
 
 ---
 
@@ -96,9 +96,11 @@ O **melhor modelo é selecionado automaticamente** pela métrica
 ## Como executar
 
 ### 1. Pré-requisitos
-* Python 3.10+
+
+- Python 3.10+
 
 ### 2. Instalar dependências
+
 ```bash
 python -m venv .venv
 source .venv/bin/activate           # Windows: .venv\Scripts\activate
@@ -106,26 +108,26 @@ pip install -r requirements.txt
 ```
 
 ### 3. (Opcional) Obter o dataset real
-Baixe o **CICIDS-2017** no Kaggle (versão *MachineLearningCVE*) e copie os CSVs
+
+Baixe o **CICIDS-2017** no Kaggle (versão _MachineLearningCVE_) e copie os CSVs
 para `data/raw/`. Arquivos relevantes para este projeto:
 
-* `Monday-WorkingHours.pcap_ISCX.csv` (tráfego BENIGN)
-* `Friday-WorkingHours-Afternoon-DDos.pcap_ISCX.csv`
-* `Friday-WorkingHours-Afternoon-PortScan.pcap_ISCX.csv`
-
-> **Sem o dataset?** Sem problema. A aplicação **gera dados sintéticos
-> realistas** automaticamente e roda 100% do mesmo jeito (um aviso é exibido).
+- `Monday-WorkingHours.pcap_ISCX.csv` (tráfego BENIGN)
+- `Friday-WorkingHours-Afternoon-DDos.pcap_ISCX.csv`
+- `Friday-WorkingHours-Afternoon-PortScan.pcap_ISCX.csv`
 
 ### 4. (Opcional) Treinar via linha de comando
+
 ```bash
-python -m scripts.train             # usa dados reais se existirem
-python -m scripts.train --synthetic # força dados sintéticos
+python -m scripts.train
 ```
 
 ### 5. Rodar o dashboard
+
 ```bash
 streamlit run app/dashboard.py
 ```
+
 Acesse **http://localhost:8501**. Na primeira execução, se não houver artefatos
 treinados, o app roda o pipeline automaticamente.
 

@@ -149,7 +149,7 @@ def preprocess(
 if __name__ == "__main__":
     from src import data_loader
 
-    raw, _ = data_loader.load_dataset()
+    raw = data_loader.load_dataset()
     X, y, art = preprocess(raw)
     print("Features:", len(art.feature_names))
     print("Shape X:", X.shape)

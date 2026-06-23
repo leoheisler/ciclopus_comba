@@ -4,7 +4,7 @@ scripts/train.py
 Script de linha de comando que executa o pipeline completo de Data Science
 de ponta a ponta e persiste os artefatos para o dashboard:
 
-    1. carrega o dataset (real ou sintético)            -> data_loader
+    1. carrega o dataset                                 -> data_loader
     2. gera timestamps sintéticos                        -> feature_engineering
     3. limpa e prepara as features                       -> preprocessing
     4. treina Decision Tree, Random Forest e XGBoost     -> training
@@ -36,17 +36,15 @@ def run(force_synthetic: bool = False) -> None:
     print("=" * 60)
 
     # 1. Carregar
-    raw, synthetic = data_loader.load_dataset(prefer_real=not force_synthetic)
-    origem = "SINTÉTICO" if synthetic else "REAL (CICIDS-2017)"
-    print(f"[1/6] Dados carregados ({origem}): {raw.shape}")
+    raw = data_loader.load_dataset()
+    print(f"[1/6] Dados carregados ({raw.shape}")
 
     # Amostragem para manter o treino ágil, preservando proporção de classes
     if config.MAX_SAMPLES and len(raw) > config.MAX_SAMPLES:
-        raw = raw.groupby(config.LABEL_COL, group_keys=False).apply(
-            lambda g: g.sample(
-                n=max(1, int(len(g) / len(raw) * config.MAX_SAMPLES)),
-                random_state=config.RANDOM_STATE,
-            )
+        raw = data_loader.balanced_sample_by_label(
+            raw,
+            max_samples=config.MAX_SAMPLES,
+            random_state=config.RANDOM_STATE,
         )
         print(f"      Amostrado para {len(raw)} registros (MAX_SAMPLES).")
 

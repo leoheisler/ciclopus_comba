@@ -163,12 +163,6 @@ def sidebar(pipe: dict) -> dict:
     st.sidebar.markdown("## Network Attack Detection Analysis")
     st.sidebar.caption("CICIDS-2017")
 
-    if pipe["is_synthetic"]:
-        st.sidebar.warning(
-            "Usando **dados sintéticos** (CSVs do CICIDS-2017 não "
-            "encontrados em `data/raw`). O pipeline é idêntico para dados reais."
-        )
-
     page = st.sidebar.radio(
         "Navegação",
         [
