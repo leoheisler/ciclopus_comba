@@ -338,17 +338,23 @@ def page_eda(df: pd.DataFrame, pipe: dict):
 
     plot_df = df[[feature, config.LABEL_COL]].copy()
     if log_x:
-        # desloca para permitir log com zeros/negativos
-        shift = plot_df[feature].min()
-        plot_df["_v"] = plot_df[feature] - shift + 1
+        # IMPORTANTE: px.histogram(log_x=True) calcula os bins em escala LINEAR
+        # e só desenha o eixo em log. Para features de grande amplitude isso faz
+        # um único bin ocupar ~70% da largura visível, deixando o gráfico
+        # "vazio". Aqui fazemos o binning no PRÓPRIO espaço log (plotamos
+        # log10 do valor deslocado), garantindo barras bem distribuídas.
+        shift = plot_df[feature].min()  # desloca para permitir log com zeros/negativos
+        plot_df["_v"] = np.log10(plot_df[feature] - shift + 1)
+        x_label = f"log₁₀({feature})"
     else:
         plot_df["_v"] = plot_df[feature]
+        x_label = feature
 
     h, bx = st.columns(2)
     fig_hist = px.histogram(
         plot_df, x="_v", color=config.LABEL_COL, nbins=60, barmode="overlay",
         color_discrete_map=config.CLASS_COLOR_MAP, opacity=0.65,
-        log_x=log_x, labels={"_v": feature}, title=f"Histograma · {feature}",
+        labels={"_v": x_label}, title=f"Histograma · {feature}",
     )
     h.plotly_chart(style_fig(fig_hist), width="stretch")
 
