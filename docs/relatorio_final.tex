@@ -41,9 +41,9 @@
 
 \title{Network Attack Detection Analysis}
 \author{%
-  Vítor Hugo Magnus Oliveira (341650) \\
-  Thomas Schneider Wiederkehr (342606) \\
-  Leonardo Gonzatti Heisler (344125)
+  Vítor Hugo Magnus Oliveira - 00341650 \\
+  Thomas Schneider Wiederkehr - 00342606 \\
+  Leonardo Gonzatti Heisler - 00344125
 }
 \date{Ciência de Dados \\ Semestre 2026/1}
 
@@ -61,7 +61,7 @@
 % ------------------------------------------------------------
 \begin{abstract}
 \noindent
-Este relatório descreve o projeto \textbf{CICLOPUS COMBA}, uma plataforma de
+Este relatório descreve o projeto \textbf{Network Attack Detection Analysis}, uma plataforma de
 análise para Centros de Operações de Segurança (SOC) desenvolvida sobre o
 dataset CICIDS-2017. O pipeline abrange carregamento e limpeza dos dados,
 geração de timestamps sintéticos para simulação operacional, treinamento
@@ -71,7 +71,7 @@ em tempo real. O melhor modelo obtido foi o \textbf{Random Forest},
 com \textbf{F1 macro de 0{,}9981} e acurácia de \textbf{99{,}94\%} no
 conjunto de teste, demonstrando a viabilidade de um sistema de detecção
 automatizada de intrusões baseado em aprendizado de máquina para os cenários
-de tráfego benigno, DDoS e PortScan.
+de tráfego benigno, DDoS e PortScan. É possível visualizar a Dashboard e interagir com um passo a passo do pipeline por um notebook do \textit{Google Colab} que pode ser acessado no seguinte link: \url{https://colab.research.google.com/drive/173iGI5XBFS84VeBb2dzX2ITvanQlp6mW?usp=sharing}
 \end{abstract}
 
 % ============================================================
@@ -436,6 +436,8 @@ A proximidade entre Random Forest e XGBoost (diferença $< 0{,}01\%$ em F1
 macro) é esperada: ambos são modelos de ensemble baseados em árvores, e o
 ganho do boosting sobre o bagging é frequentemente superado pela regularização
 implícita do bagging em datasets limpos e bem separados.
+
+Porém, estes resultados também relevam que estamos trabalhando com um dataset extremamente simples e não podemos esperar tamanha acurácia em um cenário real de segurança.
 
 \subsection{Impacto para um SOC real}
 
